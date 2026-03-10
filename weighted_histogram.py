@@ -1,8 +1,8 @@
-"""Weighted histogram helpers for OmniFold event-level analysis."""
+"""Robust weighted histogram utilities for OmniFold event-level analyses."""
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,88 +11,160 @@ from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
 
 
+class HistogramResult(dict[str, np.ndarray]):
+    """Dictionary-like histogram container.
+
+    Keys:
+    - ``hist``: weighted bin contents
+    - ``edges``: bin edges
+    - ``centers``: bin centers
+    - ``uncertainty``: per-bin statistical uncertainty (sqrt(sum w^2))
+
+    Notes
+    -----
+    For backward compatibility, iterating over this object yields
+    ``(hist, edges, uncertainty)`` so existing tuple-unpacking code continues
+    to work.
+    """
+
+    def __iter__(self):  # type: ignore[override]
+        return iter((self["hist"], self["edges"], self["uncertainty"]))
+
+
+def _validate_and_build_edges(
+    values: np.ndarray,
+    bins: int | Sequence[float] | str,
+    hist_range: tuple[float, float] | None,
+) -> np.ndarray:
+    """Validate bin specification and return histogram edges."""
+    if isinstance(bins, str):
+        if bins != "auto":
+            raise ValueError("`bins` as string is only supported for bins='auto'.")
+        return np.asarray(
+            np.histogram_bin_edges(values, bins="auto", range=hist_range),
+            dtype=float,
+        )
+
+    if np.isscalar(bins):
+        n_bins = int(bins)
+        if n_bins <= 0:
+            raise ValueError("`bins` must be a positive integer.")
+        return np.asarray(
+            np.histogram_bin_edges(values, bins=n_bins, range=hist_range),
+            dtype=float,
+        )
+
+    edges = np.asarray(bins, dtype=float)
+    if edges.ndim != 1 or edges.size < 2:
+        raise ValueError("Explicit `bins` must be a 1D array with at least 2 edges.")
+    if not np.all(np.isfinite(edges)):
+        raise ValueError("Explicit `bins` contain non-finite values.")
+    if not np.all(np.diff(edges) > 0.0):
+        raise ValueError("Explicit `bins` must be strictly increasing.")
+    return edges
+
+
 def compute_weighted_histogram(
     values: ArrayLike,
     weights: ArrayLike | None = None,
-    bins: int | Sequence[float] = 50,
+    bins: int | Sequence[float] | str = 50,
     hist_range: tuple[float, float] | None = None,
     density: bool = False,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Compute a weighted histogram and per-bin statistical uncertainty.
+) -> HistogramResult:
+    """Compute a weighted histogram with statistical uncertainties.
 
     Parameters
     ----------
     values:
-        Observable values for each event.
+        Observable values for each event. Input is flattened to 1D.
     weights:
-        Event weights. If ``None``, unit weights are used.
+        Event weights. Must match ``values`` shape. If ``None``, all weights are 1.
     bins:
-        Number of bins or explicit bin edges, passed to ``numpy.histogram``.
+        Histogram binning specification:
+        - positive integer (fixed number of bins),
+        - explicit edge sequence,
+        - ``"auto"`` for automatic bin-edge selection from data.
     hist_range:
-        Optional ``(min, max)`` range used when ``bins`` is an integer.
+        Optional ``(min, max)`` range used for integer/auto binning.
     density:
-        If ``True``, return a normalized density histogram.
+        If ``True``, return density-normalized histogram and uncertainties.
 
     Returns
     -------
-    hist, bin_edges, errors:
-        Weighted bin contents, bin edges, and per-bin uncertainty
-        ``sqrt(sum w^2)`` (also density-normalized if ``density=True``).
+    HistogramResult
+        Dictionary-like object with keys:
+        - ``hist``: weighted bin contents,
+        - ``edges``: bin edges,
+        - ``centers``: bin centers,
+        - ``uncertainty``: per-bin uncertainty ``sqrt(sum(w^2))``.
 
-    Notes
-    -----
-    Non-finite values/weights are dropped before histogramming.
+    Raises
+    ------
+    ValueError
+        If inputs are empty, shapes mismatch, no finite entries remain, or bin
+        specification is invalid.
     """
 
     values_arr = np.asarray(values, dtype=float).ravel()
+    if values_arr.size == 0:
+        raise ValueError("`values` is empty.")
 
     if weights is None:
         weights_arr = np.ones_like(values_arr, dtype=float)
     else:
         weights_arr = np.asarray(weights, dtype=float).ravel()
         if values_arr.shape != weights_arr.shape:
-            raise ValueError("`values` and `weights` must have the same shape.")
+            raise ValueError("Observable and weights must have the same shape.")
 
     finite_mask = np.isfinite(values_arr) & np.isfinite(weights_arr)
     values_arr = values_arr[finite_mask]
     weights_arr = weights_arr[finite_mask]
 
     if values_arr.size == 0:
-        raise ValueError("No finite entries remain after filtering values/weights.")
+        raise ValueError("No finite entries remain after filtering NaN/Inf values.")
 
-    hist, bin_edges = np.histogram(
-        values_arr,
-        bins=bins,
-        range=hist_range,
-        weights=weights_arr,
-        density=False,
-    )
+    edges = _validate_and_build_edges(values_arr, bins=bins, hist_range=hist_range)
+
+    hist, _ = np.histogram(values_arr, bins=edges, weights=weights_arr, density=False)
     sumw2, _ = np.histogram(
         values_arr,
-        bins=bins,
-        range=hist_range,
+        bins=edges,
         weights=weights_arr * weights_arr,
         density=False,
     )
-    errors = np.sqrt(sumw2)
+    uncertainty = np.sqrt(sumw2)
+    centers = 0.5 * (edges[1:] + edges[:-1])
+
+    hist = hist.astype(float)
+    uncertainty = uncertainty.astype(float)
+    centers = centers.astype(float)
+    edges = edges.astype(float)
 
     if density:
+        widths = np.diff(edges)
+        if not np.all(widths > 0):
+            raise ValueError("Bin widths must be positive for density normalization.")
         total_weight = float(np.sum(hist))
         if total_weight <= 0.0:
             raise ValueError(
                 "Cannot build a density histogram with non-positive total weight."
             )
-        widths = np.diff(bin_edges)
-        hist = hist / (total_weight * widths)
-        errors = errors / (total_weight * widths)
+        scale = total_weight * widths
+        hist = hist / scale
+        uncertainty = uncertainty / scale
 
-    return hist.astype(float), bin_edges.astype(float), errors.astype(float)
+    return HistogramResult(
+        hist=hist,
+        edges=edges,
+        centers=centers,
+        uncertainty=uncertainty,
+    )
 
 
 def plot_weighted_histogram(
     values: ArrayLike,
     weights: ArrayLike | None = None,
-    bins: int | Sequence[float] = 50,
+    bins: int | Sequence[float] | str = 50,
     hist_range: tuple[float, float] | None = None,
     density: bool = False,
     ax: Axes | None = None,
@@ -101,13 +173,13 @@ def plot_weighted_histogram(
     show_errors: bool = True,
     xlabel: str = "Observable",
 ) -> tuple[Figure, Axes, np.ndarray, np.ndarray, np.ndarray]:
-    """Compute and plot a weighted histogram with optional error bars.
+    """Plot a weighted histogram and return plot + arrays.
 
-    Returns the matplotlib figure/axes and the histogram arrays so calling
-    code can reuse the computed values in tests or downstream analysis.
+    This function preserves the legacy return format:
+    ``(fig, ax, hist, edges, uncertainty)``.
     """
 
-    hist, bin_edges, errors = compute_weighted_histogram(
+    result = compute_weighted_histogram(
         values=values,
         weights=weights,
         bins=bins,
@@ -115,19 +187,23 @@ def plot_weighted_histogram(
         density=density,
     )
 
+    hist = result["hist"]
+    edges = result["edges"]
+    uncertainty = result["uncertainty"]
+    centers = result["centers"]
+
     if ax is None:
         fig, ax = plt.subplots()
     else:
         fig = ax.figure
 
-    ax.stairs(hist, bin_edges, color=color, label=label, linewidth=1.8)
+    ax.stairs(hist, edges, color=color, label=label, linewidth=1.8)
 
     if show_errors:
-        centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
         ax.errorbar(
             centers,
             hist,
-            yerr=errors,
+            yerr=uncertainty,
             fmt="none",
             ecolor=color,
             elinewidth=1.0,
@@ -139,4 +215,4 @@ def plot_weighted_histogram(
     if label:
         ax.legend(frameon=False)
 
-    return fig, ax, hist, bin_edges, errors
+    return fig, ax, hist, edges, uncertainty

@@ -1,43 +1,73 @@
-# Schema Design for OmniFold Publication Metadata
+# Metadata Schema Design
 
-## Purpose
+## Motivation
 
-The metadata schema makes OmniFold outputs reusable by people who did not run the original training pipeline.
-It documents file-level capabilities (observables, weight families, event counts) so users can choose correct inputs and uncertainty procedures.
+OmniFold outputs are often distributed as event-level observables plus weight columns, but without a standardized description of generator setup, training context, normalization choices, or uncertainty semantics. This creates a reproducibility gap: users can apply weights, but they may not know which files support which uncertainty workflows or how to interpret variations consistently.
 
-## Core Schema Blocks
+## Design Goals
 
-- `files`: file path, event count, and available weight families.
-- `observables`: canonical observable column names.
-- `weights.required_core`: baseline columns for central-value histograms (`weight_mc`, `weights_nominal`).
-- `weights.uncertainty_families`: replica-driven uncertainty families.
-- `weights.detector_theory_families`: detector/theory/background/luminosity weights.
+The metadata schema is designed to provide:
 
-### Explicit Systematic Weight Families
+- reproducibility: explicit file counts, observable definitions, and weight-family meaning,
+- reuse: enough context for analysts who did not run the original OmniFold training,
+- machine readability: structured fields that can be parsed by scripts and validation tools.
 
-The schema explicitly declares uncertainty-related families, including:
+## Schema Structure
 
-- `weights_nominal` (central-value reference weight)
-- `weights_ensemble_*`
-- `weights_bootstrap_mc_*`
-- `weights_bootstrap_data_*`
+The schema uses the following top-level fields:
 
-These correspond to uncertainty propagation procedures used in OmniFold analyses:
+- `dataset`: human-readable dataset identity and scope.
+- `generation`: nominal and alternative generator/sample context.
+- `files`: nominal/systematic file mapping and event counts.
+- `observables`: per-observable names, descriptions, and units.
+- `weights`: nominal/base weights and replica-family prefixes.
+- `normalization`: luminosity/cross-section status and weight-normalization notes.
+- `event_selection`: available selection documentation and missing pieces.
+- `training`: OmniFold algorithm context and known/unknown training metadata.
+- `usage_notes`: practical analysis guidance for downstream users.
 
-- ensemble replicas for model/reweighting variation,
-- MC bootstrap replicas for MC statistical uncertainty,
-- data bootstrap replicas for data statistical uncertainty.
+## Design Decisions
 
-Explicit declaration is important because downstream users can programmatically discover what uncertainty propagation is possible for each file, instead of guessing from column names.
+YAML was chosen because it is:
 
-## How a User Who Did Not Run the Analysis Uses the Metadata
+- readable for physicists during review,
+- easy to parse in Python workflows,
+- naturally hierarchical for nested metadata (files, observables, weights).
 
-Typical workflow:
+A hierarchical schema was preferred over a flat table because OmniFold outputs mix conceptual levels: file-level provenance, column-level definitions, and analysis-level usage rules.
 
-1. **Load the HDF5 dataset** (for example `data/multifold.h5`) and inspect available columns.
-2. **Read `metadata.yaml`** to identify expected observables, event counts, and declared weight families.
-3. **Identify observables and the nominal weight** (`weights_nominal`, with `weight_mc` where needed for normalization setup).
-4. **Identify systematic/uncertainty variations** from `weights_ensemble_*`, `weights_bootstrap_mc_*`, `weights_bootstrap_data_*`, and detector/theory families.
-5. **Compute histograms with correct normalization**, applying the metadata-defined weight strategy consistently across nominal and variation histograms.
+## What Was Included vs Excluded
 
-This workflow gives reproducible histogram production even for users who only receive files + metadata at publication time.
+Included metadata:
+
+- observable list and units,
+- event counts per file,
+- nominal/systematic file mapping,
+- weight families needed for nominal and uncertainty computations,
+- explicit placeholders where information is currently unknown.
+
+Excluded metadata:
+
+- full ML training logs (optimizer history, checkpoints, random seeds, per-epoch losses),
+- full detector/reconstruction configuration payloads.
+
+These were excluded because they are not present in the distributed files and would require external provenance capture systems.
+
+## Expected User Workflow
+
+A typical user workflow is:
+
+1. Load an HDF5 file (`multifold.h5` or a systematic variation file).
+2. Read `metadata.yaml` to identify observables, nominal weights, and available variation families.
+3. Build nominal histograms with `weights_nominal` (and base MC weight if required by analysis convention).
+4. Build variation histograms using `weights_ensemble_*`, `weights_bootstrap_mc_*`, `weights_bootstrap_data_*`, and detector/theory families when available.
+5. Propagate uncertainties only for families actually present in the selected file, documenting missing families as analysis limitations.
+
+## Possible Future Extensions
+
+Potential extensions include:
+
+- JSON Schema validation for strict automated checks,
+- HEPData-compatible export helpers for publication pipelines,
+- experiment-specific metadata overlays (ATLAS/CMS naming conventions, detector campaign tags),
+- explicit uncertainty taxonomies linking each weight family to covariance-building recipes.

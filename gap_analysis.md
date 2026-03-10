@@ -1,42 +1,99 @@
-# OmniFold HDF5 Gap Analysis
+# Gap Analysis of OmniFold Weight Files
 
-## Main Finding: Weight Information Is Highly Asymmetric Across Files
+This gap analysis answers three core evaluation questions:
+1. What is contained in each file?
+2. How are columns structured and how do files differ?
+3. What missing metadata blocks reproducible reuse?
 
-The critical gap is not observable coverage, but **weight coverage**.
+## 1. File Overview
 
-| File | Events | Approx. weight columns | What is available |
-|---|---:|---:|---|
-| `multifold.h5` | 418,014 | ~175 | `weights_nominal`, `weights_ensemble_*`, `weights_bootstrap_mc_*`, `weights_bootstrap_data_*`, and many detector/theory/background/luminosity weights. |
-| `multifold_sherpa.h5` | 326,430 | ~27 | `weight_mc`, `weights_nominal`, `weights_bootstrap_mc_*`; missing ensemble and data-bootstrap families. |
-| `multifold_nonDY.h5` | 433,397 | 2 | `weight_mc`, `weights_nominal` only. |
+The repository contains three OmniFold-related HDF5 outputs:
 
-## Why This Matters
+- `multifold.h5`: nominal OmniFold output with the most complete set of weights.
+- `multifold_sherpa.h5`: alternative-generator variation (Sherpa) with reduced weight content.
+- `multifold_nonDY.h5`: non-DY alternative sample with minimal weight content.
 
-Uncertainty estimation in OmniFold commonly depends on replica-style weights (ensemble + bootstrap families).
+Together, these represent a nominal result plus systematic/alternative modeling variations. The central practical difference is that weight completeness is highly asymmetric across files.
 
-- `multifold.h5` supports full replica-based uncertainty propagation.
-- `multifold_sherpa.h5` supports only partial uncertainty propagation.
-- `multifold_nonDY.h5` does not support replica-based uncertainty estimation by itself.
+## 2. Column Categories
 
-So users working only with Sherpa/nonDY cannot reproduce the full uncertainty treatment available from `multifold.h5`.
+Columns can be grouped into three categories.
 
-## Observable Coverage (Not the Main Gap)
+### Observables
 
-The core 24 observables are aligned across files (`pT_ll`, lepton kinematics, track-jet features, `Ntracks_trackj1`, `Ntracks_trackj2`).
-This means cross-file friction is driven primarily by missing weight families, not by missing physics features.
+Observable columns encode physics quantities used for distributions and unfolding studies. They are event-level kinematic variables.
 
-## `target_dd` Interpretation
+Examples include:
 
-`target_dd` appears in `multifold.h5` and is absent from the reduced files.
+- `pT_ll`
+- `eta_ll` (common naming style in HEP tables)
+- `lepton_pt1`, `lepton_pt2` (equivalent in this dataset to `pT_l1`, `pT_l2`)
 
-Most likely it is a **data-driven training target/label** used in OmniFold-related reweighting steps (consistent with the presence of `weights_dd`).
-Its semantics are not documented in-file, so publication metadata should explicitly define:
+In this dataset, observables such as `pT_ll`, `pT_l1`, `pT_l2`, jet-track features, and multiplicities define the phase-space where weighted comparisons are performed.
 
-- meaning and valid range,
-- whether it is training-only or intended for downstream analysis,
-- how it should be used alongside `weights_dd`.
+### Weight Columns
 
-## Practical Guidance
+Weight columns contain OmniFold reweighting factors and uncertainty replicas applied to events.
 
-Use `multifold.h5` as the reference input for publication-level uncertainty propagation.
-Treat `multifold_sherpa.h5` and `multifold_nonDY.h5` as reduced/specialized inputs unless auxiliary files provide missing weight families.
+Examples:
+
+- `weights_nominal`
+- `weights_bootstrap_mc_*`
+- `weights_ensemble_*`
+
+These weights encode corrections that transform simulated event distributions toward the target data distribution and support uncertainty propagation through replica ensembles.
+
+### Metadata Columns
+
+Metadata columns carry event identifiers, labels, or auxiliary attributes rather than primary observables.
+
+Examples:
+
+- `event_id` (common identifier field in analysis ntuples)
+- `target_dd`
+- sample labels
+
+In the current files, `target_dd` is the clearest metadata-like field. It appears to be a data-driven target/label used during OmniFold-related training, but its semantic definition is not provided in-file.
+
+## 3. Comparison Across Files
+
+The three files differ substantially in weight information:
+
+- `multifold.h5` has the richest set (nominal, ensemble replicas, MC/data bootstraps, and many detector/theory weights).
+- `multifold_sherpa.h5` keeps a smaller subset (nominal plus MC bootstrap replicas).
+- `multifold_nonDY.h5` contains only `weight_mc` and `weights_nominal`.
+
+These differences are consistent with different generators/alternative samples and different systematic packaging choices. They also imply that some files cannot support full uncertainty workflows on their own because required weight replicas are missing.
+
+## 4. Missing Information Needed for Reuse
+
+For publication-grade reproducibility, the following metadata are still required:
+
+- generator configuration: needed to reproduce nominal and variation samples.
+- OmniFold training parameters: needed to understand optimization behavior.
+- number of training iterations: affects convergence and final weights.
+- neural network architecture: controls model capacity and potential bias.
+- event selection criteria: defines the fiducial phase-space being unfolded.
+- luminosity normalization: required for absolute-yield interpretation.
+- observable units: required for correct plotting and interpretation.
+- recommended binning: needed for consistent cross-analysis comparisons.
+- uncertainty interpretation: clarifies how each weight family should be propagated.
+
+Without these, downstream users can compute weighted plots but cannot reliably reproduce full analysis-level results.
+
+## 5. Challenges for Standardization
+
+Standardizing OmniFold outputs across experiments is difficult because of:
+
+- inconsistent column naming conventions,
+- very large numbers of weight replicas,
+- large file sizes and I/O costs,
+- experiment-specific detector simulations,
+- differing event selections and fiducial definitions,
+- different machine-learning training procedures and hyperparameters.
+
+These factors make a common metadata layer essential for interoperability.
+
+## 6. Summary
+
+The files are useful but not self-describing enough for robust reuse across analyses. A structured metadata schema is needed to define observables, weight families, normalization, training context, and uncertainty semantics so OmniFold outputs remain reproducible and comparable.
