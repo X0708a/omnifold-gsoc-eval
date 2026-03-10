@@ -1,43 +1,42 @@
 # OmniFold HDF5 Gap Analysis
 
-## Central Finding: Strong Asymmetry in Weight Information
+## Main Finding: Weight Information Is Highly Asymmetric Across Files
 
-The dominant gap across the three files is not in observables but in **available weight information**.
+The critical gap is not observable coverage, but **weight coverage**.
 
-| File | Events | Approx. weight columns | Weight coverage summary |
+| File | Events | Approx. weight columns | What is available |
 |---|---:|---:|---|
-| `multifold.h5` | 418,014 | ~175 | Full OmniFold-style weight content (`weights_nominal`, `weights_ensemble_*`, `weights_bootstrap_mc_*`, `weights_bootstrap_data_*`, plus many detector/theory/background/lumi weights). |
-| `multifold_sherpa.h5` | 326,430 | ~27 | Reduced set (`weight_mc`, `weights_nominal`, `weights_bootstrap_mc_*`), missing ensemble replicas and data bootstraps. |
-| `multifold_nonDY.h5` | 433,397 | 2 | Only `weight_mc` and `weights_nominal`. |
+| `multifold.h5` | 418,014 | ~175 | `weights_nominal`, `weights_ensemble_*`, `weights_bootstrap_mc_*`, `weights_bootstrap_data_*`, and many detector/theory/background/luminosity weights. |
+| `multifold_sherpa.h5` | 326,430 | ~27 | `weight_mc`, `weights_nominal`, `weights_bootstrap_mc_*`; missing ensemble and data-bootstrap families. |
+| `multifold_nonDY.h5` | 433,397 | 2 | `weight_mc`, `weights_nominal` only. |
 
-This asymmetry is the key publication risk: the files are **not equivalent for uncertainty workflows**.
+## Why This Matters
 
-## Why This Matters for Uncertainty Estimation
+Uncertainty estimation in OmniFold commonly depends on replica-style weights (ensemble + bootstrap families).
 
-OmniFold uncertainty studies typically require repeated weight realizations (ensemble and/or bootstrap replicas) to propagate model and statistical uncertainty through derived observables.
+- `multifold.h5` supports full replica-based uncertainty propagation.
+- `multifold_sherpa.h5` supports only partial uncertainty propagation.
+- `multifold_nonDY.h5` does not support replica-based uncertainty estimation by itself.
 
-- With `multifold.h5`, users can run replica-based uncertainty propagation directly.
-- With `multifold_sherpa.h5`, users can only do limited uncertainty studies (MC bootstrap only).
-- With `multifold_nonDY.h5`, users cannot run replica-based uncertainty estimation from this file alone.
+So users working only with Sherpa/nonDY cannot reproduce the full uncertainty treatment available from `multifold.h5`.
 
-In practice, a user relying only on Sherpa or nonDY inputs cannot reproduce the same uncertainty treatment available with `multifold.h5`.
+## Observable Coverage (Not the Main Gap)
 
-## Observable Coverage Is Consistent
+The core 24 observables are aligned across files (`pT_ll`, lepton kinematics, track-jet features, `Ntracks_trackj1`, `Ntracks_trackj2`).
+This means cross-file friction is driven primarily by missing weight families, not by missing physics features.
 
-All files share the same core event-level observables (24 columns), including:
-`pT_ll`, lepton kinematics (`pT_l1`, `pT_l2`, `eta_*`, `phi_*`), track-jet features (`pT_trackj*`, `y_trackj*`, `phi_trackj*`, `m_trackj*`, `tau*`), and track multiplicities (`Ntracks_trackj1`, `Ntracks_trackj2`).
+## `target_dd` Interpretation
 
-So the primary compatibility issue is **weight completeness**, not feature schema.
+`target_dd` appears in `multifold.h5` and is absent from the reduced files.
 
-## Note on `target_dd`
+Most likely it is a **data-driven training target/label** used in OmniFold-related reweighting steps (consistent with the presence of `weights_dd`).
+Its semantics are not documented in-file, so publication metadata should explicitly define:
 
-The column `target_dd` appears in `multifold.h5` but is absent from the reduced files.
+- meaning and valid range,
+- whether it is training-only or intended for downstream analysis,
+- how it should be used alongside `weights_dd`.
 
-Most likely interpretation: it is a **data-driven target label/value used during OmniFold training or calibration** (paired with `weights_dd`).
+## Practical Guidance
 
-Current limitation: the semantic meaning and intended downstream use of `target_dd` are not documented in-file. For publication-grade reproducibility, this should be explicitly defined in metadata (e.g., domain meaning, valid range, and whether it is training-only or analysis-usable).
-
-## Practical Recommendation
-
-Treat `multifold.h5` as the reference file for full uncertainty propagation.
-Use `multifold_sherpa.h5` and `multifold_nonDY.h5` as specialized inputs unless accompanying metadata or auxiliary files provide missing replica/systematic weights.
+Use `multifold.h5` as the reference input for publication-level uncertainty propagation.
+Treat `multifold_sherpa.h5` and `multifold_nonDY.h5` as reduced/specialized inputs unless auxiliary files provide missing weight families.

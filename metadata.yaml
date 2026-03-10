@@ -113,3 +113,10 @@ weights:
 notes:
   - "Weight availability is asymmetric across files; uncertainty workflows should be validated per file."
   - "`target_dd` appears in multifold.h5 and likely encodes a data-driven training target; semantics should be documented separately."
+
+consistency_checks:
+  observables_match_dataset: true
+  event_counts_verified:
+    multifold.h5: 418014
+    multifold_sherpa.h5: 326430
+    multifold_nonDY.h5: 433397
