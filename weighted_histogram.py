@@ -122,6 +122,7 @@ def compute_weighted_histogram(
             raise ValueError("Explicit `bins` must be strictly increasing.")
 
     hist, _ = np.histogram(values_arr, bins=edges, weights=weights_arr, density=False)
+    # Statistical uncertainty for weighted events: sigma = sqrt(sum(w^2)) per bin
     sumw2, _ = np.histogram(
         values_arr,
         bins=edges,

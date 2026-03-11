@@ -2,7 +2,7 @@ dataset:
   name: "OmniFold pseudodata example"
   experiment: "ATLAS-like simulation"
   description: "Example OmniFold event-level observables and reweighting outputs for pseudodata studies."
-  schema_version: "2.0"
+  schema_version: "1.0"
 
 generation:
   nominal_generator: "MG5 (nominal sample, analysis-specific setup not documented in file)"
@@ -117,6 +117,7 @@ weights:
   notes:
     - "Not all families exist in every file."
     - "multifold_nonDY.h5 provides only weight_mc and weights_nominal."
+    - "Entries marked with * are prefix patterns, not literal column names."
 
 normalization:
   luminosity: "not stored in file"

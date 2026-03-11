@@ -49,7 +49,7 @@ Metadata columns carry event identifiers, labels, or auxiliary attributes rather
 
 Examples:
 
-- `event_id` (common identifier field in analysis ntuples)
+- `event_id` (common identifier field in HEP ntuples; not confirmed in provided files, listed as a common example)
 - `target_dd`
 - sample labels
 
