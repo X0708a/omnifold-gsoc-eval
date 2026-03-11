@@ -43,11 +43,6 @@ python3 example_plot.py
 
 This reads `data/multifold.h5`, computes a weighted `pT_ll` histogram using `weights_nominal`, and saves `example_histogram.png`.
 
-## Example Usage
-
-```bash
-python example_plot.py
-```
 
 ## Run Tests
 
