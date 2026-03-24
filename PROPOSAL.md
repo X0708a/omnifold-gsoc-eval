@@ -416,11 +416,14 @@ and one uncertainty family. Everything beyond that is extensibility.
   precision loss as a C++ `strtod` issue, not Python. Maintainers confirmed and escalated to a
   Ryū/Dragonbox fix.
 
-### PODIO (AIDASoft) — Open
+### PODIO (AIDASoft) 
 
+**Merged**
 - [#941](https://github.com/AIDASoft/podio/pull/941) — Adding unit tests for JSON
   serialization, covering struct members, range matchers, and null reference handling. Under
   active review by tmadlener and andresailer.
+
+**Open**
 - [#938](https://github.com/AIDASoft/podio/pull/938) — Draft prototype of a
   `TransportFrameData` backend to validate frame-level transport at the `FrameData` layer
   without modifying `Frame`. Round-trip confirmed with maintainer tmadlener.
