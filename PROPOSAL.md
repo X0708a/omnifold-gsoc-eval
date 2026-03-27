@@ -358,6 +358,9 @@ and one uncertainty family. Everything beyond that is extensibility.
 - Compare Parquet-based access against the current HDF5-style workflow
 - *Artifact: package support for iterations plus one uncertainty family + alignment tests*
 
+**Midterm**
+-A complete minimal publication package supporting nominal weights, metadata schema, validation, and end-to-end reproducibility workflow.
+
 **Weeks 7–8**
 - Implement the user-facing API for loading weights and applying them to observables
 - Add reference histogram and uncertainty-summary utilities
