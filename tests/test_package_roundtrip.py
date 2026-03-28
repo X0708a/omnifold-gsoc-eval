@@ -5,9 +5,7 @@ import pandas as pd
 
 from omnifold_publication import (
     ensure_valid_package,
-    get_weights,
-    load_events,
-    load_metadata,
+    load_package,
     write_package,
 )
 from omnifold_publication.writer import DEFAULT_EVENT_COUNT, DEFAULT_INPUT_PATH
@@ -18,8 +16,9 @@ def test_package_roundtrip_matches_direct_histogram(tmp_path):
     package_dir = write_package(output_dir=tmp_path / "demo_nominal")
     ensure_valid_package(package_dir)
 
-    metadata = load_metadata(package_dir)
-    packaged_df = load_events(package_dir)
+    pkg = load_package(package_dir)
+    metadata = pkg.metadata()
+    packaged_df = pkg.load_events()
     direct_df = pd.read_hdf(DEFAULT_INPUT_PATH, "df").iloc[:DEFAULT_EVENT_COUNT]
 
     observable = metadata["observables"][0]["name"]
@@ -27,7 +26,7 @@ def test_package_roundtrip_matches_direct_histogram(tmp_path):
 
     packaged_result = compute_weighted_histogram(
         packaged_df[observable].to_numpy(),
-        get_weights(packaged_df, metadata),
+        pkg.get_weights(),
         bins=bins,
     )
     direct_result = compute_weighted_histogram(
@@ -42,3 +41,14 @@ def test_package_roundtrip_matches_direct_histogram(tmp_path):
         packaged_result["uncertainty"],
         direct_result["uncertainty"],
     )
+
+
+def test_function_api_remains_available(tmp_path):
+    from omnifold_publication import get_weights, load_events, load_metadata
+
+    package_dir = write_package(output_dir=tmp_path / "demo_nominal")
+    metadata = load_metadata(package_dir)
+    events = load_events(package_dir, columns=["pT_ll", metadata["weights"]["nominal"]])
+    weights = get_weights(events, metadata)
+
+    assert events.shape[0] == len(weights)

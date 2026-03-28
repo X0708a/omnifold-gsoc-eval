@@ -1,4 +1,10 @@
-"""Robust weighted histogram utilities for OmniFold event-level analyses."""
+"""Robust weighted histogram utilities for OmniFold event-level analyses.
+
+This module is intended for advanced analysis use cases where weighted
+uncertainties, NaN/Inf filtering, density normalization, or plotting helpers
+are needed. Simple proposal examples may use ``numpy.histogram`` directly for
+clarity, but this file is the richer utility for realistic downstream studies.
+"""
 
 from __future__ import annotations
 

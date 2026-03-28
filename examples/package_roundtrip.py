@@ -14,9 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from omnifold_publication import (
     ensure_valid_package,
-    get_weights,
-    load_events,
-    load_metadata,
+    load_package,
     write_package,
 )
 from omnifold_publication.writer import DEFAULT_EVENT_COUNT, DEFAULT_INPUT_PATH
@@ -27,15 +25,16 @@ def main() -> None:
     package_dir = write_package()
     ensure_valid_package(package_dir)
 
-    metadata = load_metadata(package_dir)
-    packaged_df = load_events(package_dir)
+    pkg = load_package(package_dir)
+    metadata = pkg.metadata()
+    packaged_df = pkg.load_events()
     direct_df = pd.read_hdf(DEFAULT_INPUT_PATH, "df").iloc[:DEFAULT_EVENT_COUNT]
 
     observable = metadata["observables"][0]["name"]
     bins = np.linspace(0.0, 200.0, 26)
     packaged_result = compute_weighted_histogram(
         packaged_df[observable].to_numpy(),
-        get_weights(packaged_df, metadata, variation="nominal"),
+        pkg.get_weights(kind="nominal"),
         bins=bins,
     )
     direct_result = compute_weighted_histogram(

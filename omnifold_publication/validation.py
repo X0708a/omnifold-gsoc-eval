@@ -9,7 +9,7 @@ import pandas as pd
 from .reader import load_metadata
 
 
-REQUIRED_METADATA_KEYS = ("observables", "weights", "publication")
+REQUIRED_METADATA_KEYS = ("format_version", "observables", "weights", "publication")
 REQUIRED_PUBLICATION_KEYS = ("format", "events_file", "event_count", "columns")
 REQUIRED_WEIGHT_KEYS = ("nominal", "base_mc_weight")
 
@@ -48,6 +48,14 @@ def validate_package(path: str | Path) -> list[str]:
 
     if errors:
         return errors
+
+    format_version = metadata["format_version"]
+    if not isinstance(format_version, str):
+        errors.append("format_version must be a string, for example '0.1'.")
+    elif not format_version.startswith("0."):
+        errors.append(
+            f"Unsupported format_version {format_version!r}; expected a '0.x' version."
+        )
 
     if publication["format"] != "parquet":
         errors.append("publication.format must be 'parquet'.")

@@ -29,3 +29,18 @@ def test_validation_detects_missing_events_file(tmp_path):
 
     errors = validate_package(package_dir)
     assert any("Missing events file" in error for error in errors)
+
+
+def test_validation_requires_format_version(tmp_path):
+    package_dir = write_package(output_dir=tmp_path / "demo_nominal")
+    metadata_path = Path(package_dir) / "metadata.yaml"
+
+    with metadata_path.open("r", encoding="utf-8") as stream:
+        metadata = yaml.safe_load(stream)
+
+    metadata.pop("format_version")
+    with metadata_path.open("w", encoding="utf-8") as stream:
+        yaml.safe_dump(metadata, stream, sort_keys=False)
+
+    errors = validate_package(package_dir)
+    assert any("Missing metadata key: format_version" in error for error in errors)

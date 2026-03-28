@@ -60,3 +60,31 @@ def get_weights(
     if column not in df.columns:
         raise KeyError(f"Weight column {column!r} is not present in the event table.")
     return df[column].to_numpy()
+
+
+class OmniFoldPackage:
+    """Thin wrapper matching the proposal-facing package API."""
+
+    def __init__(self, package_dir: str | Path):
+        self.package_dir = Path(package_dir)
+        self._metadata = load_metadata(self.package_dir)
+
+    def load_events(self, columns: list[str] | None = None) -> pd.DataFrame:
+        return load_events(self.package_dir, columns=columns)
+
+    def get_weights(self, kind: str = "nominal"):
+        column = self._metadata.get("weights", {}).get(kind)
+        if column is not None:
+            df = self.load_events(columns=[column])
+        else:
+            df = self.load_events()
+        return get_weights(df, self._metadata, variation=kind)
+
+    def metadata(self) -> dict[str, Any]:
+        return self._metadata
+
+
+def load_package(package_dir: str | Path) -> OmniFoldPackage:
+    """Load a publication package and return the proposal-style wrapper."""
+
+    return OmniFoldPackage(package_dir)

@@ -65,6 +65,15 @@ Reads `data/multifold.h5`, writes a minimal publication package to
 `artifacts/demo_nominal/` (Parquet + metadata), reloads it, and verifies
 that the reloaded histogram matches the original to numerical precision.
 
+**Proposal-style package API:**
+```python
+from omnifold_publication import load_package
+
+pkg = load_package("artifacts/demo_nominal/")
+df = pkg.load_events(columns=["pT_ll"])
+w = pkg.get_weights()
+```
+
 ---
 
 ## Prototype: `omnifold_publication`
@@ -77,14 +86,14 @@ publication API proposed in the GSoC project.
 | Module | Description |
 |---|---|
 | `writer.py` | Reads OmniFold HDF5 output and writes a publication package (Parquet + metadata YAML) |
-| `reader.py` | Loads metadata and event data from a publication package; selects weight families by name |
+| `reader.py` | Loads metadata and event data from a publication package; supports both function and class-based access |
 | `validation.py` | Checks schema compliance, required columns, event count consistency, and file integrity |
 
 **Package layout written by `writer.py`:**
 ```
 artifacts/demo_nominal/
     events.parquet       # observables + weights (columnar, partitioned)
-    package_metadata.yaml  # provenance, weight families, normalization
+    metadata.yaml        # format version, provenance, weight families, normalization
 ```
 
 **Key design decisions:**
@@ -100,6 +109,10 @@ artifacts/demo_nominal/
 This prototype covers the nominal package tier. The full GSoC implementation
 would extend it to all systematic weight families, configurable event
 selection, iteration metadata, and HEPData-compatible derived outputs.
+
+For lightweight proposal snippets, `numpy.histogram` may be used for
+readability. For real weighted analyses, uncertainty handling, and plotting,
+use [`weighted_histogram.py`](/Users/aashirvad/omnifold-gsoc-eval/weighted_histogram.py).
 
 ---
 

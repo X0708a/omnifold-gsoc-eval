@@ -70,6 +70,7 @@ def _build_package_metadata(
         weights["replica"] = replica_column
 
     metadata: dict[str, Any] = {
+        "format_version": "0.1",
         "dataset": source_metadata.get("dataset", {}),
         "observables": _filter_observables(source_metadata, observable_names),
         "weights": weights,

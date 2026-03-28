@@ -1,3 +1,5 @@
+format_version: "0.1"
+
 dataset:
   name: "OmniFold pseudodata example"
   experiment: "ATLAS-like simulation"
