@@ -9,7 +9,7 @@ from omnifold_publication import (
     write_package,
 )
 from omnifold_publication.writer import DEFAULT_EVENT_COUNT, DEFAULT_INPUT_PATH
-from weighted_histogram import compute_weighted_histogram
+from spec.weighted_histogram import compute_weighted_histogram
 
 
 def test_package_roundtrip_matches_direct_histogram(tmp_path):

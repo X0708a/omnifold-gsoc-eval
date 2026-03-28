@@ -7,8 +7,8 @@ outputs for publication and downstream reuse.
 
 This repository provides:
 - a structured gap analysis of available OmniFold HDF5 files,
-- a machine-readable metadata schema (`metadata.yaml`),
-- schema design rationale (`schema_design.md`),
+- a machine-readable metadata schema (`spec/metadata.yaml`),
+- schema design rationale (`docs/schema_design.md`),
 - robust weighted-histogram utilities with uncertainty handling,
 - tests covering numerical and data-quality edge cases,
 - a minimal working prototype of a publication package API.
@@ -22,15 +22,11 @@ and reuse by analysts who did not run the original training pipeline.
 
 | File / Directory | Description |
 |---|---|
-| `gap_analysis.md` | Analysis of file-level differences and missing reproducibility metadata |
-| `metadata.yaml` | Scientific metadata for dataset provenance and weight families |
-| `schema_design.md` | Schema design motivation, choices, and expected user workflow |
-| `weighted_histogram.py` | Weighted histogram computation and plotting helpers |
-| `explore_h5.py` | Helper script to inspect HDF5 structure and sample content |
-| `example_plot.py` | End-to-end example: load data, compute histogram, save plot |
-| `example_histogram.png` | Output of `example_plot.py` on the provided pseudo-data |
+| `docs/` | Design artifacts such as the gap analysis and schema rationale |
+| `spec/` | Metadata schema and histogram utility used by the prototype |
+| `scripts/` | Exploration and one-off inspection scripts |
 | `omnifold_publication/` | Prototype publication package API (writer, reader, validator) |
-| `examples/` | Roundtrip example: write package → reload → verify histogram equivalence |
+| `examples/` | Usage demos, including roundtrip validation and histogram plotting |
 | `tests/` | pytest suite for histogram logic, roundtrip correctness, and validation |
 | `data/` | Local OmniFold HDF5 files (ignored from git tracking) |
 
@@ -50,11 +46,11 @@ reproducibility across reviewer environments.
 
 **Weighted histogram example:**
 ```bash
-python3 example_plot.py
+python3 examples/example_plot.py
 ```
 
 Reads `data/multifold.h5`, computes a weighted `pT_ll` histogram using
-`weights_nominal`, and saves `example_histogram.png`.
+`weights_nominal`, and saves `examples/example_histogram.png`.
 
 **Publication package roundtrip:**
 ```bash
@@ -112,7 +108,7 @@ selection, iteration metadata, and HEPData-compatible derived outputs.
 
 For lightweight proposal snippets, `numpy.histogram` may be used for
 readability. For real weighted analyses, uncertainty handling, and plotting,
-use [`weighted_histogram.py`](/Users/aashirvad/omnifold-gsoc-eval/weighted_histogram.py).
+use [`spec/weighted_histogram.py`](/Users/aashirvad/omnifold-gsoc-eval/spec/weighted_histogram.py).
 
 ---
 

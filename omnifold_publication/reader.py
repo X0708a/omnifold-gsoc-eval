@@ -72,16 +72,22 @@ class OmniFoldPackage:
     def load_events(self, columns: list[str] | None = None) -> pd.DataFrame:
         return load_events(self.package_dir, columns=columns)
 
-    def get_weights(self, kind: str = "nominal"):
-        column = self._metadata.get("weights", {}).get(kind)
+    def get_weights(self, kind: str = "nominal", variation: str | None = None):
+        selection = variation or kind
+        column = self._metadata.get("weights", {}).get(selection)
         if column is not None:
             df = self.load_events(columns=[column])
         else:
             df = self.load_events()
-        return get_weights(df, self._metadata, variation=kind)
+        return get_weights(df, self._metadata, variation=selection)
 
     def metadata(self) -> dict[str, Any]:
         return self._metadata
+
+    def validate(self) -> None:
+        from .validation import ensure_valid_package
+
+        ensure_valid_package(self.package_dir)
 
 
 def load_package(package_dir: str | Path) -> OmniFoldPackage:

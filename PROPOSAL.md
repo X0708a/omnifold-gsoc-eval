@@ -225,7 +225,7 @@ versioning, and interoperability with the scientific Python ecosystem.
 ```python
 import numpy as np
 from omnifold_publication import load_package
-from weighted_histogram import weighted_histogram
+from spec.weighted_histogram import compute_weighted_histogram as weighted_histogram
 
 pkg = load_package("artifacts/zjets_nominal")
 pkg.validate()
@@ -455,7 +455,7 @@ across the three files — 175 weight columns in the nominal file versus 2 in th
 ```python
 # Example of the proposed user-facing API
 from omnifold_publication import load_package
-from weighted_histogram import weighted_histogram
+from spec.weighted_histogram import compute_weighted_histogram as weighted_histogram
 
 pkg = load_package("artifacts/demo_nominal/")
 df = pkg.load_events(columns=["pT_ll"])

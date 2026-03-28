@@ -5,7 +5,7 @@ matplotlib.use("Agg")
 import numpy as np
 import pytest
 
-from weighted_histogram import compute_weighted_histogram, plot_weighted_histogram
+from spec.weighted_histogram import compute_weighted_histogram, plot_weighted_histogram
 
 
 def test_basic_histogram_computation_matches_numpy():

@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
+
 import numpy as np
 import pandas as pd
 
-from weighted_histogram import plot_weighted_histogram
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from spec.weighted_histogram import plot_weighted_histogram
 
 
 def main() -> None:
-    df = pd.read_hdf("data/multifold.h5", "df")
+    df = pd.read_hdf(PROJECT_ROOT / "data/multifold.h5", "df")
 
     values = df["pT_ll"].to_numpy()
     weights = df["weights_nominal"].to_numpy()
@@ -33,7 +40,7 @@ def main() -> None:
     ax.set_title("Weighted $p_{T}^{\\ell\\ell}$ Distribution")
     ax.grid(alpha=0.25)
     fig.tight_layout()
-    fig.savefig("example_histogram.png", dpi=160)
+    fig.savefig(PROJECT_ROOT / "examples/example_histogram.png", dpi=160)
     fig.clf()
 
 

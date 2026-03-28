@@ -10,7 +10,7 @@ import yaml
 
 
 DEFAULT_INPUT_PATH = Path("data/multifold.h5")
-DEFAULT_METADATA_SOURCE = Path("metadata.yaml")
+DEFAULT_METADATA_SOURCE = Path("spec/metadata.yaml")
 DEFAULT_OUTPUT_DIR = Path("artifacts/demo_nominal")
 DEFAULT_EVENT_COUNT = 10_000
 PRIMARY_OBSERVABLE = "pT_ll"

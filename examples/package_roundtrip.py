@@ -18,7 +18,7 @@ from omnifold_publication import (
     write_package,
 )
 from omnifold_publication.writer import DEFAULT_EVENT_COUNT, DEFAULT_INPUT_PATH
-from weighted_histogram import compute_weighted_histogram
+from spec.weighted_histogram import compute_weighted_histogram
 
 
 def main() -> None:
