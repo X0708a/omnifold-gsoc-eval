@@ -61,6 +61,22 @@ Reads `data/multifold.h5`, writes a minimal publication package to
 `artifacts/demo_nominal/` (Parquet + metadata), reloads it, and verifies
 that the reloaded histogram matches the original to numerical precision.
 
+**Reproduce a packaged histogram:**
+```bash
+python3 examples/reproduce_histogram.py
+```
+
+Loads `artifacts/demo_nominal/`, computes a nominal weighted histogram, and
+prints a compact closure summary. Run `examples/package_roundtrip.py` first if
+the demo package has not been created.
+
+**Command-line inspection:**
+```bash
+python3 -m omnifold_publication summary artifacts/demo_nominal/
+python3 -m omnifold_publication validate artifacts/demo_nominal/
+python3 -m omnifold_publication inspect artifacts/demo_nominal/
+```
+
 **Proposal-style package API:**
 ```python
 from omnifold_publication import load_package
@@ -68,6 +84,7 @@ from omnifold_publication import load_package
 pkg = load_package("artifacts/demo_nominal/")
 df = pkg.load_events(columns=["pT_ll"])
 w = pkg.get_weights()
+replicas = pkg.list_systematics()
 ```
 
 ---
@@ -84,6 +101,7 @@ publication API proposed in the GSoC project.
 | `writer.py` | Reads OmniFold HDF5 output and writes a publication package (Parquet + metadata YAML) |
 | `reader.py` | Loads metadata and event data from a publication package; supports both function and class-based access |
 | `validation.py` | Checks schema compliance, required columns, event count consistency, and file integrity |
+| `cli.py` | Provides lightweight `inspect`, `validate`, and `summary` commands |
 
 **Package layout written by `writer.py`:**
 ```
@@ -102,9 +120,10 @@ artifacts/demo_nominal/
 - Validation is decoupled from reading, so packages can be checked
   independently of the analysis workflow.
 
-This prototype covers the nominal package tier. The full GSoC implementation
-would extend it to all systematic weight families, configurable event
-selection, iteration metadata, and HEPData-compatible derived outputs.
+This prototype covers a compact package tier and now includes Phase 2 hooks
+for metadata-declared systematics, iteration-aware weights, event alignment
+checks, normalization checks, and a small CLI. The remaining full-project scope
+is broader HEPData export and richer experiment provenance.
 
 For lightweight proposal snippets, `numpy.histogram` may be used for
 readability. For real weighted analyses, uncertainty handling, and plotting,
@@ -122,4 +141,5 @@ The test suite includes:
 - robustness checks for realistic physics-data issues (NaNs, negative weights,
   shape mismatches, empty arrays),
 - roundtrip correctness (write package → reload → compare histograms),
-- validation failure cases (missing files, missing columns, wrong event counts).
+- validation failure cases (missing files, missing columns, wrong event counts),
+- metadata-driven systematics, iteration weights, normalization, closure, and CLI behavior.

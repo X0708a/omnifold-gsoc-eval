@@ -21,6 +21,8 @@ The schema uses the following top-level fields:
 - `files`: nominal/systematic file mapping and event counts.
 - `observables`: per-observable names, descriptions, and units.
 - `weights`: nominal/base weights and replica-family prefixes.
+- `systematics`: declared uncertainty families and combination guidance.
+- `iterations`: optional step1/step2 iteration-weight semantics.
 - `normalization`: luminosity/cross-section status and weight-normalization notes.
 - `event_selection`: available selection documentation and missing pieces.
 - `training`: OmniFold algorithm context and known/unknown training metadata.
@@ -68,6 +70,10 @@ A typical user workflow is:
 3. Build nominal histograms with `weights_nominal` (and base MC weight if required by analysis convention).
 4. Build variation histograms using `weights_ensemble_*`, `weights_bootstrap_mc_*`, `weights_bootstrap_data_*`, and detector/theory families when available.
 5. Propagate uncertainties only for families actually present in the selected file, documenting missing families as analysis limitations.
+
+For packaged outputs, users should query systematics and iteration weights from
+package metadata rather than scanning column names. This keeps the analysis
+contract explicit and lets validation catch missing or incompatible columns.
 
 ## Possible Future Extensions
 

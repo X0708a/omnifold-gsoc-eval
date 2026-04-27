@@ -121,6 +121,27 @@ weights:
     - "multifold_nonDY.h5 provides only weight_mc and weights_nominal."
     - "Entries marked with * are prefix patterns, not literal column names."
 
+systematics:
+  expected_families:
+    - name: "ensemble"
+      pattern: "weights_ensemble_*"
+      type: "model ensemble"
+      combination: "compare each replica with the nominal weight"
+    - name: "bootstrap_mc"
+      pattern: "weights_bootstrap_mc_*"
+      type: "MC statistical bootstrap"
+      combination: "spread across replicas"
+    - name: "bootstrap_data"
+      pattern: "weights_bootstrap_data_*"
+      type: "data statistical bootstrap"
+      combination: "spread across replicas"
+
+iterations:
+  supported_steps:
+    - "step1"
+    - "step2"
+  note: "Iteration weights should be stored with explicit iteration index and step metadata when available."
+
 normalization:
   luminosity: "not stored in file"
   cross_section: "not stored in file"
